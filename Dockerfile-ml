@@ -1,0 +1,19 @@
+FROM nvidia/cuda:12.1.1-runtime-ubuntu20.04
+RUN apt-get update && \
+    apt-get install -y python3-pip python3-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set the working directory for `ml_processor`
+WORKDIR /ml_processor
+
+# Copy the requirements and install the Python dependencies
+COPY ml_processor/requirements.txt .
+RUN apt-get update && apt-get install git -y
+RUN pip install "git+https://github.com/openai/whisper.git"
+RUN python3 -m pip install -r requirements.txt
+
+# Copy the ml_processor module into the container
+COPY ml_processor/ .
+
+# Run the initialization script to preload models and other resources
+CMD ["python", "initialize_ml_module.py"]

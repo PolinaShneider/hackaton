@@ -7,3 +7,4 @@ api/migrations/__pycache__/
 media_files/
 ml_processor/__pycache__/
 ml_processor/migrations/__pycache__/
+ml_processor/code/__pycache__/
