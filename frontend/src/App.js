@@ -1,19 +1,30 @@
 import './App.css';
-import { useState, useEffect } from 'react';
-import axios from 'axios'; // Для отправки запросов
+import { useState } from 'react';
+import ProgressBar from './ProgressBar';
+import axios from 'axios';
 
 function App() {
     const [mode, setMode] = useState("directInput");
     const [loading, setLoading] = useState(false);
+    const [processing, setProcessing] = useState(false);
     const [result, setResult] = useState(null);
     const [progress, setProgress] = useState(0);
 
-    useEffect(() => {
-        // Добавьте эффекты, если необходимо
-    }, []);
+    const handleProcessing = () => {
+        try {
+            setProcessing(true);
+            setTimeout(() => {
+                setResult({});
+                setProcessing(false);
+            }, 3000)
+        } catch (e) {
+            setProcessing(false);
+        }
+    }
 
     const onUploadFile = async (event) => {
         const file = event.target.files[0];
+        setResult(null);
 
         if (!file) return;
 
@@ -21,24 +32,23 @@ function App() {
             setLoading(true);
             setProgress(0);
 
-            // Добавьте логику для отправки файла на сервер для обработки
-            // Вам также понадобится серверный код для обработки аудио/видео и создания .docx файла
-
-            // Пример использования axios для отправки файла на сервер
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('audio_file', file);
 
-            const response = await axios.post('/api/process', formData, {
+            const response = await axios.post('http://localhost:8000/api/upload_audio/', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
                 onUploadProgress: (progressEvent) => {
                     const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                     setProgress(percentCompleted);
                 },
             });
 
-            // Получите результаты с сервера (например, ссылку на .docx файл) и установите их в state
             setResult(response.data.result);
 
             setLoading(false);
+            handleProcessing();
         } catch (error) {
             console.error('Error:', error);
             setLoading(false);
@@ -47,27 +57,28 @@ function App() {
 
     const onPasteLink = async (event) => {
         const link = event.target.value;
-
-        if (!link) return;
-
-        // Добавьте логику для извлечения аудиодорожки из видео по ссылке
-        // И создания .docx файла с терминами
+        setResult(null);
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+        if (!youtubeRegex.test(link)) {
+            alert('Please enter a valid YouTube URL.');
+            setLoading(false);
+            return;
+        }
 
         try {
             setLoading(true);
             setProgress(0);
 
-            // Пример использования axios для отправки запроса на сервер для обработки видео по ссылке
-            const response = await axios.post('/api/process-youtube', { link }, {
-                onUploadProgress: (progressEvent) => {
+            const response = await axios.post('http://localhost:8000/api/upload_video/', { youtube_url: link }, {
+                responseType: 'blob',
+                onDownloadProgress: (progressEvent) => {
                     const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                     setProgress(percentCompleted);
                 },
             });
 
-            // Получите результаты с сервера (например, ссылку на .docx файл) и установите их в state
             setResult(response.data.result);
-
+            handleProcessing();
             setLoading(false);
         } catch (error) {
             console.error('Error:', error);
@@ -77,7 +88,6 @@ function App() {
 
     const downloadResult = () => {
         if (result) {
-            // Добавьте логику для скачивания .docx файла
             window.location.href = result; // Перенаправление на скачивание файла
         }
     }
@@ -85,18 +95,22 @@ function App() {
     return (
         <div className="container">
             <div>
-                <button onClick={() => setMode("directInput")}>Upload audio</button>
-                <button onClick={() => setMode("youTube")}>Download from YouTube</button>
+                <button disabled={loading} onClick={() => setMode("directInput")}>Upload audio</button>
+                <button disabled={loading} onClick={() => setMode("youTube")}>Download from YouTube</button>
             </div>
             <div>
                 {mode === "directInput" ? (
-                    <input onChange={onUploadFile} type="file" />
+                    <input disabled={loading} onChange={onUploadFile} type="file" accept="audio/*"  />
                 ) : (
-                    <input onChange={onPasteLink} type="text" placeholder="Enter YouTube link" />
+                    <input disabled={loading} onChange={onPasteLink} type="text" placeholder="Enter YouTube link" />
                 )}
             </div>
-            {loading ? <progress value={progress} /> : null}
-            <button hidden={!result} onClick={downloadResult}>Download result</button>
+            <ProgressBar progress={progress} isLoading={loading} />
+            <div hidden={!processing}>
+                <h2>Processing started</h2>
+                <p>Please, wait — we are processing your data. It can take some time</p>
+            </div>
+            <button hidden={loading || processing || !result} onClick={downloadResult}>Download result</button>
         </div>
     );
 }
