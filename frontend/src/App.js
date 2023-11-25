@@ -10,13 +10,14 @@ function App() {
     const [result, setResult] = useState(null);
     const [progress, setProgress] = useState(0);
 
-    const handleProcessing = () => {
+    const handleProcessing = async () => {
         try {
             setProcessing(true);
-            setTimeout(() => {
-                setResult({});
-                setProcessing(false);
-            }, 3000)
+            const result = await axios.post('http://localhost:8000/ml_processor/process/', {
+                test: '123'
+            })
+            setResult(result);
+            setProcessing(false);
         } catch (e) {
             setProcessing(false);
         }
@@ -48,7 +49,7 @@ function App() {
             setResult(response.data.result);
 
             setLoading(false);
-            handleProcessing();
+            void handleProcessing();
         } catch (error) {
             console.error('Error:', error);
             setLoading(false);
@@ -78,7 +79,7 @@ function App() {
             });
 
             setResult(response.data.result);
-            handleProcessing();
+            void handleProcessing();
             setLoading(false);
         } catch (error) {
             console.error('Error:', error);

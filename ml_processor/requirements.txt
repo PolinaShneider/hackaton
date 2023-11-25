@@ -1,0 +1,13 @@
+requests
+botocore
+urllib3
+pymorphy2
+peft
+transformers
+sentencepiece
+python-docx
+torch
+pandas
+datetime
+nltk
+git+https://github.com/openai/whisper.git
