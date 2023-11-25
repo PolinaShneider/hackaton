@@ -12,10 +12,9 @@
       networks:
         - main
       restart: on-failure
-
     backend:
       build: .
-      command: bash -c "python manage.py migrate --no-input && gunicorn backend.wsgi:application --bind 0.0.0.0:8000"
+      command: bash -c "python manage.py migrate --no-input && python manage.py runserver 0.0.0.0:8000"
       volumes:
         - .:/app
       ports:
@@ -29,21 +28,6 @@
       restart: always
       networks:
         - main
-
-    ml_processor:
-      build:
-        context: .
-        dockerfile: Dockerfile-ml
-      # runtime: nvidia
-      environment:
-        - NVIDIA_VISIBLE_DEVICES=all
-      volumes:
-        - ./ml_processor:/ml_processor
-      ports:
-        - "5000:5000"
-      networks:
-        - main
-
     frontend:
       build:
         context: .
